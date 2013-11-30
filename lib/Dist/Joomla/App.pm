@@ -141,8 +141,6 @@ sub run {
                 my $view_name = $view;
                 $view_name =~ s/^$view_dir[\\\/]]?//;
                 
-                print $view_name, "\n";
-                
                 # copy the tmpl folder and its contents to the non forked views folder
                 rcopy( "$view/tmpl", "$_/views/$view_name/tmpl" );
                 
@@ -151,6 +149,15 @@ sub run {
                 
             }
         }
+        
+        # copy model form .xml files from the fork directory
+        my $form_dir =  "$_/fork/models/forms";
+        if ( -d $form_dir ) {
+            rcopy( $form_dir, "$_/models/forms" );
+        }
+        
+        # delete the forked model forms
+        rmtree($form_dir);
         
         # if running in min-mode, delete image folders to decrease file size
         if ( $ARG{min}  ) {
@@ -166,15 +173,23 @@ sub run {
     }
 
     
+    
+    
     # change into the parent directory
     chdir '..';
+    
+    my $output_file = $ARG{out} || $tmpdir . '.zip';
+    
+    # delete last output file if exists
+    unlink $output_file if -f $output_file;
+    
     my $zip = Archive::Zip->new;
     
     $zip->addDirectory($tmpdir);
     
     $zip->addTree( $tmpdir, $tmpdir, undef, 9 );
     
-    $zip->writeToFileNamed( $ARG{out} || $tmpdir . '.zip' );
+    $zip->writeToFileNamed( $output_file );
     
     rmtree($tmpdir);
 
